@@ -1,1 +1,3 @@
 __pycache__/
+# Weights saved from the app settings page
+rubric/weights.yaml

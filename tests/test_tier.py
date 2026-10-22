@@ -11,7 +11,7 @@ CALIBRATION = Path(__file__).resolve().parent.parent / "rubric" / "calibration" 
 class TierTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.rubric = load_rubric()
+        cls.rubric = load_rubric(custom_weights=False)
         with open(CALIBRATION) as f:
             cls.classes = yaml.safe_load(f)["classes"]
 

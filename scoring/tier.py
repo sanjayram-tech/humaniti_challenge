@@ -6,6 +6,8 @@ from pathlib import Path
 import yaml
 
 RUBRIC_PATH = Path(__file__).resolve().parent.parent / "rubric" / "rubric.yaml"
+# Weights edited on the app's settings page; rubric.yaml keeps the defaults.
+WEIGHTS_PATH = RUBRIC_PATH.with_name("weights.yaml")
 TIER_ORDER = ["Excellent", "Good", "Average", "Weak", "Quality issue"]
 GATE_RESULTS = {"pass", "partial", "fail"}
 
@@ -17,9 +19,30 @@ class TierResult:
     reasons: list = field(default_factory=list)
 
 
-def load_rubric(path=RUBRIC_PATH):
+def load_rubric(path=RUBRIC_PATH, custom_weights=True):
+    """Load the rubric, with weights from weights.yaml applied unless custom_weights=False."""
     with open(path) as f:
-        return yaml.safe_load(f)
+        rubric = yaml.safe_load(f)
+    if custom_weights and WEIGHTS_PATH.exists():
+        with open(WEIGHTS_PATH) as f:
+            weights = yaml.safe_load(f) or {}
+        for dim in rubric["dimensions"]:
+            dim["weight"] = weights.get(dim["id"], dim["weight"])
+    return rubric
+
+
+def save_weights(weights):
+    """weights: {dimension_id: weight}. Must be whole numbers summing to 100."""
+    if any(not isinstance(w, int) or w < 0 for w in weights.values()):
+        raise ValueError("Weights must be whole numbers, 0 or more")
+    if sum(weights.values()) != 100:
+        raise ValueError(f"Weights must add up to 100, got {sum(weights.values())}")
+    with open(WEIGHTS_PATH, "w") as f:
+        yaml.safe_dump(weights, f, sort_keys=False)
+
+
+def reset_weights():
+    WEIGHTS_PATH.unlink(missing_ok=True)
 
 
 def _lower(tier, max_tier):

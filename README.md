@@ -24,6 +24,12 @@ What happens to an upload:
 
 Results can be downloaded as JSON.
 
+**Rubric weights page** (sidebar): change how much each teaching dimension counts.
+Weights must total 100 and are saved to `rubric/weights.yaml` (not committed; delete it or
+press "Reset to defaults" to go back to `rubric.yaml`). The page previews how the new
+weights rate the 10 reviewed classes before you save. Results scored with older weights
+offer a "Recalculate" button.
+
 Limitations: the transcript has no speaker labels (Claude infers tutor vs. students),
 and energy/tone is judged from words only, not from the voice.
 
