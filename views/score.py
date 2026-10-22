@@ -7,10 +7,9 @@ from pathlib import Path
 
 import streamlit as st
 
-from scoring.llm import CUSTOM, PROVIDERS, ScoringError, detect_provider, make_client, provider_from_env
+from scoring.llm import PROVIDERS, ScoringError, make_client
 from scoring.media import fmt_ts
 from scoring.pipeline import score_recording
-from scoring.transcribe import API_PROVIDERS
 from scoring.tier import assign_tier, load_rubric
 
 TIER_COLOURS = {
@@ -18,6 +17,10 @@ TIER_COLOURS = {
     "Weak": "red", "Quality issue": "violet",
 }
 GATE_ICONS = {"pass": "✅", "partial": "⚠️", "fail": "❌"}
+
+# One Gemini key does everything: frame checks, teaching scores and transcription.
+PROVIDER = "Google Gemini"
+MODEL = PROVIDERS[PROVIDER].model
 
 st.title("♟️ Chess class scorer")
 st.caption("Upload a class recording to score it against the 3-layer rubric (rubric/RUBRIC.md).")
@@ -28,64 +31,11 @@ current_weights = {d["id"]: d["weight"] for d in rubric["dimensions"]}
 gate_names = {g["id"]: g["name"] for g in rubric["gates"]}
 
 with st.sidebar:
-    st.header("LLM")
     api_key = st.text_input(
-        "API key", type="password",
-        help="Anthropic, OpenAI, Gemini, Groq, OpenRouter and xAI keys are recognised automatically. "
-             "Any other key needs the base URL of an OpenAI-compatible API. "
-             "Leave empty to use a key from the environment (e.g. OPENAI_API_KEY).",
-    ).strip()
-    provider = (detect_provider(api_key) or CUSTOM) if api_key else provider_from_env(
-        [n for n in PROVIDERS if n != CUSTOM])
-    base_url = None
-    if provider == CUSTOM:
-        base_url = st.text_input(
-            "Base URL", placeholder="https://api.mistral.ai/v1",
-            help="OpenAI-compatible endpoint, e.g. https://api.deepseek.com or http://localhost:11434/v1 (Ollama).",
-        ).strip() or None
-    elif provider:
-        st.caption(f"Detected **{provider}**" + ("" if api_key else " (key from environment)"))
-    model = st.text_input(
-        "Model", value=PROVIDERS[provider].model if provider else "", key=f"model_{provider}",
-        help="Any model the provider offers. It must accept images for the frame checks.",
-    ).strip()
-    frame_every_s = st.slider("Check a video frame every (seconds)", 10, 120, 30, 10)
-
-    st.header("Transcription")
-    t_mode = st.radio("Run with", ["Local model", "API"], index=1, horizontal=True,
-                      help="Local runs faster-whisper on this machine; API sends the audio to OpenAI, Groq or Gemini.")
-    if t_mode == "Local model":
-        transcription = {"model_size": st.selectbox(
-            "Whisper model", ["tiny", "base", "small", "medium", "large-v3"], index=2,
-            help="Larger is more accurate but slower. 'small' is a good balance on CPU.",
-        )}
-    else:
-        t_key = st.text_input(
-            "Transcription API key", type="password",
-            help="OpenAI or Groq key (Whisper), or a Gemini key (Gemini listens to the audio). "
-                 "Any other key needs the base URL of an OpenAI-compatible Whisper API. "
-                 "Leave empty to reuse the LLM key when it's an OpenAI, Groq or Gemini key.",
-        ).strip()
-        if not t_key and provider in API_PROVIDERS:
-            t_key = api_key or os.environ.get(API_PROVIDERS[provider]["env_var"], "")
-        if not t_key and (env := provider_from_env(list(API_PROVIDERS))):
-            t_key = os.environ[API_PROVIDERS[env]["env_var"]]
-        t_provider = detect_provider(t_key) if t_key else None
-        t_preset = API_PROVIDERS.get(t_provider)
-        t_base_url = None
-        if t_preset:
-            st.caption(f"Using **{t_provider}**")
-            t_base_url = t_preset["base_url"]
-        elif t_key:
-            t_base_url = st.text_input("Transcription base URL", placeholder="https://your-endpoint/v1").strip() or None
-        t_model = st.text_input(
-            "Transcription model", value=t_preset["model"] if t_preset else "whisper-1",
-            key=f"t_model_{t_provider}",
-            help="Whisper APIs: needs timestamped output (verbose_json), e.g. whisper-1. "
-                 "Gemini: any model that accepts audio.",
-        ).strip()
-        transcription = {"api_key": t_key, "model": t_model, "base_url": t_base_url,
-                         "provider": t_provider if t_preset else None}
+        "Gemini API key", type="password",
+        help="Get a free key at https://aistudio.google.com/apikey. "
+             "Leave empty to use GEMINI_API_KEY from the environment.",
+    ).strip() or os.environ.get("GEMINI_API_KEY", "")
 
 with st.form("upload"):
     video = st.file_uploader("Class recording", type=["mp4", "mov", "mkv", "webm", "avi", "m4v"])
@@ -99,17 +49,12 @@ if submitted:
     if not video:
         st.error("Upload a recording first.")
         st.stop()
-    if not provider:
-        st.error("Add an LLM API key in the sidebar.")
+    if not api_key:
+        st.error("Add your Gemini API key in the sidebar.")
         st.stop()
-    if not transcript_file and "api_key" in transcription and not transcription["api_key"]:
-        st.error("Add a transcription API key, or switch transcription to the local model.")
-        st.stop()
-    try:
-        client = make_client(provider, api_key or None, model, base_url)
-    except ScoringError as e:
-        st.error(str(e))
-        st.stop()
+    client = make_client(PROVIDER, api_key, MODEL)
+    transcription = {"api_key": api_key, "model": MODEL, "provider": PROVIDER,
+                     "base_url": PROVIDERS[PROVIDER].base_url}
 
     context = {"file": video.name}
     transcript_text = transcript_file.getvalue().decode("utf-8", errors="replace") if transcript_file else None
@@ -123,7 +68,6 @@ if submitted:
                 path, context, client,
                 transcript_text=transcript_text,
                 transcription=transcription,
-                frame_every_s=frame_every_s,
                 on_step=lambda msg, frac: progress.progress(frac, text=msg),
             )
         except ScoringError as e:

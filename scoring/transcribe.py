@@ -61,6 +61,7 @@ def transcribe(wav, model_size="small", language=None):
 
     segments: [{"start": s, "end": s, "text": str}]. mean_confidence is 0-1, derived
     from Whisper's average log-probability; low values suggest poor audio.
+    Needs `pip install faster-whisper` (not in requirements.txt; the app uses Gemini).
     """
     from faster_whisper import WhisperModel
 
