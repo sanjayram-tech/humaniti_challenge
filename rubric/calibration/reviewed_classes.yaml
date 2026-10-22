@@ -1,0 +1,144 @@
+# The 10 classes from the reviewers' feedback document, scored against the 3-layer rubric.
+#
+# IMPORTANT: gates and dimension scores below are INFERRED from the written feedback,
+# not from watching the recordings. Items the feedback doesn't mention are assumed
+# pass / middling. They check that the tier rules reproduce the reviewers' tiers;
+# they are not ground truth for the AI scorer. Replace them with scores from a
+# reviewer who watches each recording against RUBRIC.md.
+
+classes:
+  - id: B491-2026-06-29
+    batch: B491
+    date: 2026-06-29
+    tutor: Ayswarya Joseph
+    reviewer_tier: Excellent
+    reviewer_feedback: >-
+      good one-to-one interaction, background was there, asked questions by calling
+      individually, can play topic related videos and share HWs
+    notes: >-
+      "can play topic related videos and share HWs" is ambiguous (done, or a suggestion?).
+      Treated as done. If homework was NOT set, the rubric would cap this class at Good.
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 4, inclusion: 5, student_thinking: 4, questioning: 4, feedback: 4, energy: 4, structure: 5, chess_clarity: 5}
+
+  - id: B472-2026-08-24
+    batch: B472
+    date: 2026-08-24
+    tutor: Mayuri Savalkar
+    reviewer_tier: Excellent
+    reviewer_feedback: >-
+      good rapport building, consider everyone in the class, individually asking
+      questions given HWs
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 5, inclusion: 5, student_thinking: 4, questioning: 4, feedback: 4, energy: 4, structure: 4, chess_clarity: 4}
+
+  - id: B552-2026-09-02
+    batch: B552
+    date: 2026-09-02
+    tutor: Bleson Bastin
+    reviewer_tier: Good
+    reviewer_feedback: >-
+      good intro and introduction, fixed 8*8 background, given HWs, need more pleasant
+      interaction
+    notes: Date in the feedback document reads "02/09/203326"; assumed 2026-09-02.
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 4, inclusion: 4, student_thinking: 3, questioning: 3, feedback: 3, energy: 3, structure: 4, chess_clarity: 4}
+
+  - id: B435-2026-07-25
+    batch: B435
+    date: 2026-07-25
+    tutor: Aleena Ann Biby
+    reviewer_tier: Good
+    reviewer_feedback: >-
+      good introduction, consider everyone in class, individually asking questions with
+      everyone, should give HWs
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: false
+    scores: {rapport: 4, inclusion: 5, student_thinking: 4, questioning: 4, feedback: 4, energy: 4, structure: 3, chess_clarity: 4}
+
+  - id: B516-2026-09-03
+    batch: B516
+    date: 2026-09-03
+    tutor: Reshma P M
+    reviewer_tier: Average
+    reviewer_feedback: >-
+      kept 8*8 background, individually considering each and every one in class in the
+      beginning and during puzzles solving time also, given HWs, some clarity issues
+      were there while keeping the background
+    notes: >-
+      Strong on inclusion and homework; the clarity problem is what pulls it to Average,
+      so av_clarity is scored fail. If reviewers would call this level of glitching
+      "partial", the rubric would rate the class Good instead.
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: fail}
+    homework_set: true
+    scores: {rapport: 3, inclusion: 5, student_thinking: 4, questioning: 4, feedback: 3, energy: 3, structure: 4, chess_clarity: 3}
+
+  - id: B435-2026-08-28
+    batch: B435
+    date: 2026-08-28
+    tutor: Sumit Ranjan
+    reviewer_tier: Average
+    reviewer_feedback: >-
+      background was there, one-to-one consideration was there, individually ask
+      questions, need more energetic communication and more pleasant interaction,
+      should give HWs, can sit in space where have light
+    gates: {background: pass, camera_face: pass, lighting: partial, av_clarity: pass}
+    homework_set: false
+    scores: {rapport: 3, inclusion: 4, student_thinking: 3, questioning: 4, feedback: 3, energy: 2, structure: 3, chess_clarity: 3}
+
+  - id: B558-2026-09-05
+    batch: B558
+    date: 2026-09-05
+    tutor: Pranav Kumar
+    reviewer_tier: Weak
+    reviewer_feedback: >-
+      kept background, need a better intro and conclusion, should give a time for the
+      new joiners for self-introduction, need more energetic and pleasant interaction
+    notes: Homework not mentioned; assumed set.
+    gates: {background: pass, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 1, inclusion: 3, student_thinking: 3, questioning: 3, feedback: 3, energy: 2, structure: 2, chess_clarity: 3}
+
+  - id: B482-2026-09-02
+    batch: B482
+    date: 2026-09-02
+    tutor: TSP Abhishek
+    reviewer_tier: Weak
+    reviewer_feedback: >-
+      kept background, ask questions individually, directly go to revision of previous
+      class without a proper rapport building, should give a time for the new joiners
+      for self-introduction, sometimes tutor's camera was turned off while teaching
+    notes: Homework not mentioned; assumed set.
+    gates: {background: pass, camera_face: partial, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 1, inclusion: 4, student_thinking: 3, questioning: 4, feedback: 3, energy: 3, structure: 3, chess_clarity: 3}
+
+  - id: B392-2026-09-02
+    batch: B392
+    date: 2026-09-02
+    tutor: Pavan Babu
+    reviewer_tier: Quality issue
+    reviewer_feedback: >-
+      interaction was there, but no background, need a better happy interaction with
+      the kids, informed about the quality issues several times
+    notes: >-
+      "Informed several times" is tutor history, not visible in the video; track it as a
+      separate repeat-issue flag from tutor records.
+    gates: {background: fail, camera_face: pass, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 3, inclusion: 3, student_thinking: 3, questioning: 3, feedback: 3, energy: 2, structure: 3, chess_clarity: 3}
+
+  - id: B441-2026-09-26
+    batch: B441
+    date: 2026-09-26
+    tutor: Yasar Abdullah
+    reviewer_tier: Quality issue
+    reviewer_feedback: >-
+      kept background but can't see his face, directly entered into class without
+      proper rapport building, need a good happier communication
+    gates: {background: pass, camera_face: fail, lighting: pass, av_clarity: pass}
+    homework_set: true
+    scores: {rapport: 1, inclusion: 3, student_thinking: 3, questioning: 3, feedback: 3, energy: 2, structure: 3, chess_clarity: 3}

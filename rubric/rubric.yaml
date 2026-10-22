@@ -1,0 +1,158 @@
+# Class quality rubric for online kids' chess classes.
+# Human-readable guide: rubric/RUBRIC.md. Tier logic: scoring/tier.py.
+version: 1
+
+# ---------------------------------------------------------------------------
+# Layer 1: must-haves. Each gate is scored pass / partial / fail.
+# Critical gates: fail -> "Quality issue" tier, partial -> capped at Weak.
+# Minor gates:    fail -> capped at Average, partial -> no cap (note it in feedback).
+# ---------------------------------------------------------------------------
+gates:
+  - id: background
+    name: 8x8 chessboard background
+    severity: critical
+    pass: Background visible in >= 90% of sampled frames
+    partial: Visible in 50-90% of frames, or switched off for part of the class
+    fail: Visible in < 50% of frames
+    measure: Frame sampling (1 frame / 10 s) + background classifier
+
+  - id: camera_face
+    name: Camera on, tutor's face visible
+    severity: critical
+    pass: Face detected in >= 90% of sampled frames
+    partial: Face detected in 50-90% of frames (camera off at times)
+    fail: Face detected in < 50% of frames
+    measure: Face detection on sampled frames
+
+  - id: lighting
+    name: Adequate lighting
+    severity: minor
+    pass: Face clearly lit for most of the class
+    partial: Dim at times but face still recognisable
+    fail: Face dark or washed out for most of the class
+    measure: Mean brightness / contrast of the face region
+
+  - id: av_clarity
+    name: Audio and video clarity
+    severity: minor
+    pass: Speech intelligible, no persistent glitches
+    partial: Occasional dropouts or background glitches
+    fail: Frequent dropouts, unintelligible speech or a broken background
+    measure: Transcription confidence, speech-quality score, frame glitch detection
+
+# ---------------------------------------------------------------------------
+# Layer 2: teaching quality. Each dimension is scored 1-5 against the anchors
+# (2 and 4 sit between the written anchors). Weights sum to 100.
+# Every score must cite evidence (timestamps + quotes or counts).
+# ---------------------------------------------------------------------------
+dimensions:
+  - id: rapport
+    name: Warm-up and rapport
+    weight: 15
+    anchors:
+      5: Greets each child by name, small talk before teaching, new joiners introduce themselves
+      3: Generic greeting, brief chat, new joiners acknowledged but not invited to introduce themselves
+      1: Starts teaching or revising straight away, no greeting or rapport building
+    indicators:
+      - Minutes of non-teaching interaction before the first lesson content
+      - Share of students greeted by name
+      - New joiners given time to introduce themselves (yes / no / no new joiners)
+
+  - id: inclusion
+    name: Inclusion of every student
+    weight: 15
+    anchors:
+      5: Every student called on by name at least twice; no child silent all class
+      3: Most students called on; one or two quiet children left out
+      1: Only a few students take part; the tutor addresses the class as a whole
+    indicators:
+      - Distinct students addressed by name / students present
+      - Minimum number of turns for any student
+      - Students who never speak
+
+  - id: student_thinking
+    name: Students do the thinking
+    weight: 10
+    anchors:
+      5: Students solve positions and suggest moves most of the time; the tutor guides
+      3: Mix of demonstration and student solving
+      1: The tutor demonstrates throughout; students only watch
+    indicators:
+      - Student talk time / total talk time
+      - Positions or puzzles where a student proposed the move
+
+  - id: questioning
+    name: Questioning
+    weight: 10
+    anchors:
+      5: Mostly open questions ("What would you play here, and why?"), waits 3+ s, follows up on answers
+      3: Some open questions; short waits; follow-ups occasionally
+      1: Few questions, mostly yes/no; the tutor answers their own questions
+    indicators:
+      - Questions per 10 minutes
+      - Share of open questions
+      - Median wait time after a question
+      - Uptake (the tutor builds on a student's answer)
+
+  - id: feedback
+    name: Feedback to students
+    weight: 10
+    anchors:
+      5: Specific praise for effort and ideas; wrong moves corrected by explaining why
+      3: Generic praise ("good"); corrections given without explanation
+      1: Little feedback, or dismissive / discouraging corrections
+    indicators:
+      - Praise count and share that is specific
+      - Corrections that include a reason
+
+  - id: energy
+    name: Energy and tone
+    weight: 15
+    anchors:
+      5: Lively, warm, varied voice; encouragement throughout; kids sound engaged
+      3: Friendly but flat or monotone in parts
+      1: Low energy, monotone or impatient
+    indicators:
+      - Pitch variation and speaking rate (audio)
+      - Encouraging phrases per 10 minutes
+      - LLM tone judgement with quoted examples
+
+  - id: structure
+    name: Lesson structure
+    weight: 15
+    anchors:
+      5: States today's topic, revises the previous class after the warm-up, recaps at the end, sets homework
+      3: Has a clear topic but misses the recap or the homework
+      1: No clear topic, no recap, no homework
+    indicators:
+      - Topic stated (timestamp)
+      - Revision placed after the warm-up
+      - Recap in the last 10 minutes
+      - Homework set (yes / no, with quote)
+
+  - id: chess_clarity
+    name: Chess clarity
+    weight: 10
+    anchors:
+      5: Explains why moves work, correct terms, pitched at the kids' level; may use topic videos
+      3: Mostly correct, but explanations are thin ("just play this")
+      1: Confusing or incorrect explanations, wrong level for the class
+    indicators:
+      - Explanations that give a reason
+      - Chess terms used correctly
+      - Supporting material shown (topic videos, diagrams)
+
+# ---------------------------------------------------------------------------
+# Tiers. Score = weighted mean of Layer 2 (1-5). The tier is the highest one
+# whose threshold is met, then lowered by any caps below.
+# ---------------------------------------------------------------------------
+tiers:
+  - {name: Excellent, min_score: 4.2}
+  - {name: Good, min_score: 3.5}
+  - {name: Average, min_score: 2.8}
+  - {name: Weak, min_score: 0}
+  - {name: Quality issue, min_score: null}   # only reached through a critical gate failure
+
+caps:
+  - {rule: no_homework, max_tier: Good, description: "Homework not set"}
+  - {rule: rapport_at_most_2, max_tier: Average, description: "Rapport scored 1-2"}
