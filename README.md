@@ -42,8 +42,8 @@ Open http://localhost:8501.
 
 1. In the sidebar, paste an LLM API key (Anthropic, OpenAI, Gemini, Groq, OpenRouter or xAI keys are
    detected automatically; other keys need a base URL). The model must support images.
-2. Pick transcription: **Local model** (free, downloads on first use) or **API** (OpenAI, Groq or
-   Gemini key; with a Gemini LLM key you can leave it empty and use one key for everything).
+2. Pick transcription: **API** (default; OpenAI, Groq or
+   Gemini key; with a Gemini LLM key you can leave it empty) or **Local model** (free, needs ~1 GB RAM).
 3. Upload the class video (optionally a `.srt` / `.vtt` / `.txt` transcript) and click **Score class**.
 
 ## Deploy (Hugging Face Spaces)

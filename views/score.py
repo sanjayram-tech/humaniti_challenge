@@ -52,7 +52,7 @@ with st.sidebar:
     frame_every_s = st.slider("Check a video frame every (seconds)", 10, 120, 30, 10)
 
     st.header("Transcription")
-    t_mode = st.radio("Run with", ["Local model", "API"], horizontal=True,
+    t_mode = st.radio("Run with", ["Local model", "API"], index=1, horizontal=True,
                       help="Local runs faster-whisper on this machine; API sends the audio to OpenAI, Groq or Gemini.")
     if t_mode == "Local model":
         transcription = {"model_size": st.selectbox(
