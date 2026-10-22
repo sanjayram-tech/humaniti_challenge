@@ -1,6 +1,6 @@
 import unittest
 
-from scoring.claude_scoring import gates_from_frames
+from scoring.llm_scoring import gates_from_frames
 from scoring.transcribe import parse_transcript_file
 
 

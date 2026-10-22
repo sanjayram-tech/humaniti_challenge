@@ -7,9 +7,10 @@ from pathlib import Path
 
 import streamlit as st
 
-from scoring.claude_scoring import ScoringError, make_client
+from scoring.llm import CUSTOM, PROVIDERS, ScoringError, detect_provider, make_client, provider_from_env
 from scoring.media import fmt_ts
 from scoring.pipeline import score_recording
+from scoring.transcribe import API_PROVIDERS
 from scoring.tier import assign_tier, load_rubric
 
 TIER_COLOURS = {
@@ -27,27 +28,67 @@ current_weights = {d["id"]: d["weight"] for d in rubric["dimensions"]}
 gate_names = {g["id"]: g["name"] for g in rubric["gates"]}
 
 with st.sidebar:
-    st.header("Run options")
+    st.header("LLM")
     api_key = st.text_input(
-        "Anthropic API key", type="password",
-        help="Leave empty to use ANTHROPIC_API_KEY from the environment.",
-    )
-    whisper_model = st.selectbox(
-        "Transcription model", ["tiny", "base", "small", "medium", "large-v3"], index=2,
-        help="Larger is more accurate but slower. 'small' is a good balance on CPU.",
-    )
+        "API key", type="password",
+        help="Anthropic, OpenAI, Gemini, Groq, OpenRouter and xAI keys are recognised automatically. "
+             "Any other key needs the base URL of an OpenAI-compatible API. "
+             "Leave empty to use a key from the environment (e.g. OPENAI_API_KEY).",
+    ).strip()
+    provider = (detect_provider(api_key) or CUSTOM) if api_key else provider_from_env(
+        [n for n in PROVIDERS if n != CUSTOM])
+    base_url = None
+    if provider == CUSTOM:
+        base_url = st.text_input(
+            "Base URL", placeholder="https://api.mistral.ai/v1",
+            help="OpenAI-compatible endpoint, e.g. https://api.deepseek.com or http://localhost:11434/v1 (Ollama).",
+        ).strip() or None
+    elif provider:
+        st.caption(f"Detected **{provider}**" + ("" if api_key else " (key from environment)"))
+    model = st.text_input(
+        "Model", value=PROVIDERS[provider].model if provider else "", key=f"model_{provider}",
+        help="Any model the provider offers. It must accept images for the frame checks.",
+    ).strip()
     frame_every_s = st.slider("Check a video frame every (seconds)", 10, 120, 30, 10)
+
+    st.header("Transcription")
+    t_mode = st.radio("Run with", ["Local model", "API"], horizontal=True,
+                      help="Local runs faster-whisper on this machine; API sends the audio to OpenAI, Groq or Gemini.")
+    if t_mode == "Local model":
+        transcription = {"model_size": st.selectbox(
+            "Whisper model", ["tiny", "base", "small", "medium", "large-v3"], index=2,
+            help="Larger is more accurate but slower. 'small' is a good balance on CPU.",
+        )}
+    else:
+        t_key = st.text_input(
+            "Transcription API key", type="password",
+            help="OpenAI or Groq key (Whisper), or a Gemini key (Gemini listens to the audio). "
+                 "Any other key needs the base URL of an OpenAI-compatible Whisper API. "
+                 "Leave empty to reuse the LLM key when it's an OpenAI, Groq or Gemini key.",
+        ).strip()
+        if not t_key and provider in API_PROVIDERS:
+            t_key = api_key or os.environ.get(API_PROVIDERS[provider]["env_var"], "")
+        if not t_key and (env := provider_from_env(list(API_PROVIDERS))):
+            t_key = os.environ[API_PROVIDERS[env]["env_var"]]
+        t_provider = detect_provider(t_key) if t_key else None
+        t_preset = API_PROVIDERS.get(t_provider)
+        t_base_url = None
+        if t_preset:
+            st.caption(f"Using **{t_provider}**")
+            t_base_url = t_preset["base_url"]
+        elif t_key:
+            t_base_url = st.text_input("Transcription base URL", placeholder="https://your-endpoint/v1").strip() or None
+        t_model = st.text_input(
+            "Transcription model", value=t_preset["model"] if t_preset else "whisper-1",
+            key=f"t_model_{t_provider}",
+            help="Whisper APIs: needs timestamped output (verbose_json), e.g. whisper-1. "
+                 "Gemini: any model that accepts audio.",
+        ).strip()
+        transcription = {"api_key": t_key, "model": t_model, "base_url": t_base_url,
+                         "provider": t_provider if t_preset else None}
 
 with st.form("upload"):
     video = st.file_uploader("Class recording", type=["mp4", "mov", "mkv", "webm", "avi", "m4v"])
-    col1, col2, col3 = st.columns(3)
-    batch = col1.text_input("Batch", placeholder="B491")
-    tutor = col2.text_input("Tutor", placeholder="Tutor name")
-    class_date = col3.date_input("Class date", value=None)
-    col4, col5 = st.columns(2)
-    level = col4.selectbox("Class level", ["", "Beginner", "Intermediate", "Advanced"])
-    students = col5.text_input("Students enrolled (optional)", placeholder="Arjun, Meera, Kabir")
-    notes = st.text_area("Notes for the scorer (optional)", height=68)
     transcript_file = st.file_uploader(
         "Transcript (optional, .srt / .vtt / .txt): skips automatic transcription",
         type=["srt", "vtt", "txt"],
@@ -58,16 +99,19 @@ if submitted:
     if not video:
         st.error("Upload a recording first.")
         st.stop()
-    if not (api_key or os.environ.get("ANTHROPIC_API_KEY")):
-        st.error("Add an Anthropic API key in the sidebar, or set ANTHROPIC_API_KEY.")
+    if not provider:
+        st.error("Add an LLM API key in the sidebar.")
+        st.stop()
+    if not transcript_file and "api_key" in transcription and not transcription["api_key"]:
+        st.error("Add a transcription API key, or switch transcription to the local model.")
+        st.stop()
+    try:
+        client = make_client(provider, api_key or None, model, base_url)
+    except ScoringError as e:
+        st.error(str(e))
         st.stop()
 
-    context = {
-        "batch": batch, "tutor": tutor,
-        "date": class_date.isoformat() if class_date else "",
-        "level": level, "students": students, "notes": notes,
-        "file": video.name,
-    }
+    context = {"file": video.name}
     transcript_text = transcript_file.getvalue().decode("utf-8", errors="replace") if transcript_file else None
 
     progress = st.progress(0.0, text="Starting")
@@ -76,9 +120,9 @@ if submitted:
         path.write_bytes(video.getbuffer())
         try:
             st.session_state.result = score_recording(
-                path, context, make_client(api_key or None),
+                path, context, client,
                 transcript_text=transcript_text,
-                whisper_model=whisper_model,
+                transcription=transcription,
                 frame_every_s=frame_every_s,
                 on_step=lambda msg, frac: progress.progress(frac, text=msg),
             )
@@ -104,7 +148,7 @@ if result:
             result.update(tier=new.tier, score=new.score, reasons=new.reasons, weights=current_weights)
             st.rerun()
 
-    title = " · ".join(x for x in [ctx.get("batch"), ctx.get("tutor"), ctx.get("date")] if x) or ctx["file"]
+    title = ctx["file"]
     st.divider()
     st.subheader(title, anchor=False)
 
@@ -152,6 +196,6 @@ if result:
     st.download_button(
         "Download result (JSON)",
         json.dumps(result, indent=2, default=str),
-        file_name=f"{(ctx.get('batch') or 'class')}_{ctx.get('date') or 'score'}.json",
+        file_name=f"{Path(ctx['file']).stem}_score.json",
         mime="application/json",
     )

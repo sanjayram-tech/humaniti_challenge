@@ -1,46 +1,66 @@
-# humaniti_challenge
+---
+title: Chess Class Scorer
+emoji: ♟️
+colorFrom: indigo
+colorTo: gray
+sdk: docker
+app_port: 8501
+pinned: false
+---
 
-Rating recorded online chess classes for kids as Excellent / Good / Average / Weak /
-Quality issue, using a 3-layer rubric that AI and human reviewers share.
+# humaniti_challenge: Chess Class Scorer
 
-## Scoring app
+Upload a recorded chess class and get a quality tier, teaching scores and feedback.
 
-Upload a recording and get a tier, per-dimension scores with timestamped evidence,
-and feedback in the reviewers' style.
+## Setup
+
+Needs Python 3.10+.
 
 ```sh
-pip install -r requirements.txt        # also needs ffmpeg on PATH
-export ANTHROPIC_API_KEY=sk-ant-...    # or paste it in the app's sidebar
-streamlit run app.py
+git clone git@github.com:sanjayram-tech/humaniti_challenge.git
+cd humaniti_challenge
+python -m venv .venv
 ```
 
-What happens to an upload:
-1. **Audio → transcript** locally with faster-whisper (the model downloads on first use).
-   You can upload an `.srt` / `.vtt` / `.txt` transcript instead to skip this step.
-2. **Frames → Layer 1 gates.** One frame every 30 s goes to Claude to check the
-   chessboard background, face visibility, lighting and glitches.
-3. **Transcript → Layer 2 scores.** Claude scores the 8 dimensions against the rubric anchors.
-4. **Tier** from [`scoring/tier.py`](scoring/tier.py); the AI never picks the tier itself.
+Windows:
 
-Results can be downloaded as JSON.
+```powershell
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python -m streamlit run app.py
+```
 
-**Rubric weights page** (sidebar): change how much each teaching dimension counts.
-Weights must total 100 and are saved to `rubric/weights.yaml` (not committed; delete it or
-press "Reset to defaults" to go back to `rubric.yaml`). The page previews how the new
-weights rate the 10 reviewed classes before you save. Results scored with older weights
-offer a "Recalculate" button.
+macOS / Linux:
 
-Limitations: the transcript has no speaker labels (Claude infers tutor vs. students),
-and energy/tone is judged from words only, not from the voice.
+```sh
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m streamlit run app.py
+```
 
-## Rubric
+Open http://localhost:8501.
 
-- [`rubric/RUBRIC.md`](rubric/RUBRIC.md): the scoring guide (start here)
-- [`rubric/rubric.yaml`](rubric/rubric.yaml): machine-readable rubric
-- [`rubric/calibration/reviewed_classes.yaml`](rubric/calibration/reviewed_classes.yaml): the 10 classes reviewers have already rated
+## Use
+
+1. In the sidebar, paste an LLM API key (Anthropic, OpenAI, Gemini, Groq, OpenRouter or xAI keys are
+   detected automatically; other keys need a base URL). The model must support images.
+2. Pick transcription: **Local model** (free, downloads on first use) or **API** (OpenAI, Groq or
+   Gemini key; with a Gemini LLM key you can leave it empty and use one key for everything).
+3. Upload the class video (optionally a `.srt` / `.vtt` / `.txt` transcript) and click **Score class**.
+
+## Deploy (Hugging Face Spaces)
+
+1. Create a Space at https://huggingface.co/new-space, choosing **Docker** → **Blank**.
+2. Push this code to it (use an HF access token with write access as the password):
+
+   ```sh
+   git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
+   git push space HEAD:main
+   ```
+
+The Space builds the `Dockerfile` and serves the app. Users paste their own API keys in the sidebar.
+Don't add API keys as Space secrets on a public Space: anyone could then use them.
 
 ## Tests
 
 ```sh
-python3 -m unittest -v
+python -m unittest
 ```

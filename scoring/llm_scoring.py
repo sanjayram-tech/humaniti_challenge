@@ -1,38 +1,12 @@
-"""Claude calls: Layer 1 frame checks (vision) and Layer 2 teaching scores (transcript)."""
+"""LLM calls: Layer 1 frame checks (vision) and Layer 2 teaching scores (transcript).
 
-import base64
-import json
+`client` is any client from scoring.llm.make_client (Anthropic, OpenAI, Gemini, ...).
+"""
 
-import anthropic
-
+from scoring.llm import ScoringError, image, text  # noqa: F401  (ScoringError re-exported)
 from scoring.media import fmt_ts
 
-MODEL = "claude-opus-5-5"
 FRAMES_PER_REQUEST = 10
-
-
-class ScoringError(RuntimeError):
-    pass
-
-
-def _ask_json(client, content, schema, effort, system=None):
-    """One structured-output request; returns the parsed JSON object."""
-    kwargs = {"system": system} if system else {}
-    response = client.beta.messages.create(
-        model=MODEL,
-        max_tokens=16000,
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
-        messages=[{"role": "user", "content": content}],
-        **kwargs,
-    )
-    if response.stop_reason == "refusal":
-        raise ScoringError(f"Claude declined the request ({response.stop_details})")
-    if response.stop_reason == "max_tokens":
-        raise ScoringError("Claude's answer was cut off (max_tokens); try a shorter recording")
-    text = next(b.text for b in response.content if b.type == "text")
-    return json.loads(text)
 
 
 # ---------------------------------------------------------------------------
@@ -78,11 +52,10 @@ def check_frames(client, frames, on_progress=None):
         batch = frames[start:start + FRAMES_PER_REQUEST]
         content = []
         for i, (t, path) in enumerate(batch):
-            data = base64.standard_b64encode(path.read_bytes()).decode("utf-8")
-            content.append({"type": "text", "text": f"Frame {i} (at {fmt_ts(t)}):"})
-            content.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}})
-        content.append({"type": "text", "text": FRAME_PROMPT})
-        answer = _ask_json(client, content, FRAME_SCHEMA, effort="low")
+            content.append(text(f"Frame {i} (at {fmt_ts(t)}):"))
+            content.append(image(path.read_bytes()))
+        content.append(text(FRAME_PROMPT))
+        answer = client.ask_json(content, FRAME_SCHEMA, effort="low")
         by_index = {f["index"]: f for f in answer["frames"]}
         for i, (t, _) in enumerate(batch):
             if i in by_index:
@@ -212,8 +185,5 @@ Also report whether homework was set (with a quote), list the main strengths and
 `feedback` in the reviewers' house style: one line of short comma-separated phrases, strengths first, then
 "should ..." / "need ..." items. Example: "good rapport building, consider everyone in the class, individually
 asking questions, given HWs, need more energetic communication"."""
-    return _ask_json(client, prompt, teaching_schema(rubric), effort="high", system=SYSTEM)
+    return client.ask_json(prompt, teaching_schema(rubric), effort="high", system=SYSTEM)
 
-
-def make_client(api_key=None):
-    return anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
