@@ -38,10 +38,19 @@ macOS / Linux:
 
 Open http://localhost:8501.
 
+## Get a Gemini API key (free)
+
+1. Go to https://aistudio.google.com/apikey and sign in with a Google account.
+2. Accept the terms if asked, then click **Create API key**.
+3. Pick an existing Google Cloud project or let it create one, and confirm.
+4. Copy the key (it starts with `AIza`). Keep it private; anyone with it can use your quota.
+
+The free tier has rate and daily limits; check them on the same page if requests start failing.
+
 ## Use
 
-1. Paste your Gemini API key in the sidebar (free at https://aistudio.google.com/apikey).
-   It is used for everything: transcription, frame checks and scoring.
+1. Paste your Gemini API key in the sidebar. It is used for everything: transcription,
+   frame checks and scoring.
 2. Upload the class video (optionally a `.srt` / `.vtt` / `.txt` transcript) and click **Score class**.
 
 ## Deploy (Hugging Face Spaces)
