@@ -1,13 +1,3 @@
----
-title: Chess Class Scorer
-emoji: ♟️
-colorFrom: indigo
-colorTo: gray
-sdk: docker
-app_port: 8501
-pinned: false
----
-
 # humaniti_challenge: Chess Class Scorer
 
 Upload a recorded chess class and get a quality tier, teaching scores and feedback.

@@ -1,5 +1,0 @@
-.venv/
-.git/
-__pycache__/
-tests/
-rubric/weights.yaml
