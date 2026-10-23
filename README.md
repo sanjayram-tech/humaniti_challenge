@@ -52,22 +52,3 @@ The free tier has rate and daily limits; check them on the same page if requests
 1. Paste your Gemini API key in the sidebar. It is used for everything: transcription,
    frame checks and scoring.
 2. Upload the class video (optionally a `.srt` / `.vtt` / `.txt` transcript) and click **Score class**.
-
-## Deploy (Hugging Face Spaces)
-
-1. Create a Space at https://huggingface.co/new-space, choosing **Docker** → **Blank**.
-2. Push this code to it (use an HF access token with write access as the password):
-
-   ```sh
-   git remote add space https://huggingface.co/spaces/<your-username>/<space-name>
-   git push space HEAD:main
-   ```
-
-The Space builds the `Dockerfile` and serves the app. Users paste their own API keys in the sidebar.
-Don't add API keys as Space secrets on a public Space: anyone could then use them.
-
-## Tests
-
-```sh
-python -m unittest
-```
